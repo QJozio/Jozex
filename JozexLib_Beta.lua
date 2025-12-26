@@ -1,77 +1,110 @@
--- [[ Rayfield Universal Loader - Fixed 2025 ]] --
-getgenv().SecureMode = true -- Helps bypass game UI blocks
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
+-- [[ JOZEX AIMBOT - CUSTOM UI EDITION 2025 ]] --
 
-local Window = Rayfield:CreateWindow({
-   Name = "JOZEX HUB | BETA",
-   LoadingTitle = "Jozex Universal",
-   LoadingSubtitle = "by QJozio",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = "JozexConfigs",
-      FileName = "MainConfig"
-   },
-   Discord = {
-      Enabled = false
-   },
-   KeySystem = false -- NO KEY SYSTEM AS REQUESTED
-})
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
-local MainTab = Window:CreateTab("Movement", 4483362458)
+-- [[ UI SETTINGS ]] --
+local JozexUI = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local MainFrame = Instance.new("Frame", JozexUI)
+local Title = Instance.new("TextLabel", MainFrame)
+local Container = Instance.new("Frame", MainFrame)
 
-MainTab:CreateSlider({
-   Name = "Walk Speed",
-   Range = {16, 300},
-   Increment = 1,
-   CurrentValue = 16,
-   Flag = "WS_Flag",
-   Callback = function(Value)
-      game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
-   end,
-})
+-- [[ AIMBOT SETTINGS ]] --
+local Settings = {
+    Enabled = false,
+    FOV = 150,
+    Smoothing = 0.5,
+    AimPart = "Head",
+    TeamCheck = true
+}
 
-MainTab:CreateSlider({
-   Name = "Jump Power",
-   Range = {50, 500},
-   Increment = 1,
-   CurrentValue = 50,
-   Flag = "JP_Flag",
-   Callback = function(Value)
-      game.Players.LocalPlayer.Character.Humanoid.UseJumpPower = true
-      game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
-   end,
-})
+-- [[ UI DESIGN ]] --
+MainFrame.Size = UDim2.new(0, 350, 0, 250)
+MainFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
 
-local CombatTab = Window:CreateTab("Combat", 4483362458)
+Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Text = "  JOZEX AIMBOT | BETA"
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.BackgroundTransparency = 1
 
-local CamLock = false
-CombatTab:CreateToggle({
-   Name = "Cam Lock (Nearest)",
-   CurrentValue = false,
-   Flag = "CamLock_Flag",
-   Callback = function(Value)
-      CamLock = Value
-      task.spawn(function()
-         while CamLock do
-            task.wait()
-            local target = nil
-            local dist = math.huge
-            for _, v in pairs(game.Players:GetPlayers()) do
-               if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
-                  local d = (v.Character.Head.Position - game.Players.LocalPlayer.Character.Head.Position).Magnitude
-                  if d < dist then target = v; dist = d end
-               end
+Container.Size = UDim2.new(1, -20, 1, -60)
+Container.Position = UDim2.new(0, 10, 0, 50)
+Container.BackgroundTransparency = 1
+local Layout = Instance.new("UIListLayout", Container)
+Layout.Padding = UDim.new(0, 8)
+
+-- Function to create Bento-style buttons
+local function CreateToggle(text, callback)
+    local btn = Instance.new("TextButton", Container)
+    btn.Size = UDim2.new(1, 0, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    btn.Text = text .. ": OFF"
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.Gotham
+    Instance.new("UICorner", btn)
+    
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        active = not active
+        btn.Text = text .. (active and ": ON" or ": OFF")
+        btn.BackgroundColor3 = active and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(25, 25, 25)
+        callback(active)
+    end)
+end
+
+-- [[ THE AIMBOT LOGIC ]] --
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Thickness = 1
+FOVCircle.Color = Color3.new(1, 1, 1)
+
+local function GetClosestPlayer()
+    local target = nil
+    local dist = Settings.FOV
+    for _, v in pairs(Players:GetPlayers()) do
+        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Settings.AimPart) then
+            if Settings.TeamCheck and v.Team == LocalPlayer.Team then continue end
+            local pos, onScreen = Camera:WorldToViewportPoint(v.Character[Settings.AimPart].Position)
+            if onScreen then
+                local mag = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
+                if mag < dist then
+                    target = v
+                    dist = mag
+                end
             end
-            if target then
-               workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position, target.Character.Head.Position)
-            end
-         end
-      end)
-   end,
-})
+        end
+    end
+    return target
+end
 
-Rayfield:Notify({
-   Title = "Success!",
-   Content = "Jozex Beta Loaded Successfully",
-   Duration = 5
-})
+RunService.RenderStepped:Connect(function()
+    FOVCircle.Position = UserInputService:GetMouseLocation()
+    FOVCircle.Radius = Settings.FOV
+    FOVCircle.Visible = Settings.Enabled
+    
+    if Settings.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+        local target = GetClosestPlayer()
+        if target then
+            local aimPos = target.Character[Settings.AimPart].Position
+            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, aimPos), Settings.Smoothing)
+        end
+    end
+end)
+
+-- [[ ADD UI ELEMENTS ]] --
+CreateToggle("Master Switch", function(s) Settings.Enabled = s end)
+CreateToggle("Team Check", function(s) Settings.TeamCheck = s end)
+
+-- Keybind to hide/show menu (Insert Key)
+UserInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Insert then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
