@@ -1,4 +1,6 @@
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- [[ Rayfield Universal Loader - 2025 Fixed ]] --
+getgenv().SecureMode = true -- Bypasses some detections
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "JOZEX HUB | BETA",
@@ -6,62 +8,55 @@ local Window = Rayfield:CreateWindow({
    LoadingSubtitle = "by QJozio",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = "JozexHub",
-      FileName = "Config"
-   }
+      FolderName = "JozexConfigs",
+      FileName = "Main"
+   },
+   Discord = {
+      Enabled = false
+   },
+   KeySystem = false -- IMPORTANT: Set to false so it opens instantly
 })
 
-local PlayerTab = Window:CreateTab("Movement", 4483362458) -- Player Icon
-local CombatTab = Window:CreateTab("Combat", 4483362458) -- Sword Icon
+local MainTab = Window:CreateTab("Player", 4483362458)
 
--- [[ MOVEMENT FEATURES ]] --
-
-PlayerTab:CreateSlider({
-   Name = "WalkSpeed",
+MainTab:CreateSlider({
+   Name = "Walk Speed",
    Range = {16, 300},
    Increment = 1,
-   Suffix = "Speed",
    CurrentValue = 16,
-   Flag = "WS_Slider",
    Callback = function(Value)
       game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
    end,
 })
 
-PlayerTab:CreateSlider({
-   Name = "JumpPower",
+MainTab:CreateSlider({
+   Name = "Jump Power",
    Range = {50, 500},
    Increment = 1,
-   Suffix = "Power",
    CurrentValue = 50,
-   Flag = "JP_Slider",
    Callback = function(Value)
       game.Players.LocalPlayer.Character.Humanoid.UseJumpPower = true
       game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
    end,
 })
 
--- [[ COMBAT FEATURES ]] --
+local CombatTab = Window:CreateTab("Combat", 4483362458)
 
-local CamLockEnabled = false
+local CamLock = false
 CombatTab:CreateToggle({
    Name = "Cam Lock (Nearest)",
    CurrentValue = false,
-   Flag = "CamLock_1",
    Callback = function(Value)
-      CamLockEnabled = Value
+      CamLock = Value
       task.spawn(function()
-         while CamLockEnabled do
+         while CamLock do
             task.wait()
             local target = nil
             local dist = math.huge
             for _, v in pairs(game.Players:GetPlayers()) do
                if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
                   local d = (v.Character.Head.Position - game.Players.LocalPlayer.Character.Head.Position).Magnitude
-                  if d < dist then
-                     target = v
-                     dist = d
-                  end
+                  if d < dist then target = v; dist = d end
                end
             end
             if target then
@@ -73,8 +68,7 @@ CombatTab:CreateToggle({
 })
 
 Rayfield:Notify({
-   Title = "Jozex Beta Loaded",
-   Content = "Universal Script is ready!",
-   Duration = 5,
-   Image = 4483362458,
+   Title = "Success!",
+   Content = "Jozex Beta has loaded.",
+   Duration = 3
 })
