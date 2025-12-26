@@ -1,5 +1,5 @@
--- [[ Rayfield Universal Loader - 2025 Fixed ]] --
-getgenv().SecureMode = true -- Bypasses some detections
+-- [[ Rayfield Universal Loader - Fixed 2025 ]] --
+getgenv().SecureMode = true -- Helps bypass game UI blocks
 local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/main/source.lua'))()
 
 local Window = Rayfield:CreateWindow({
@@ -9,21 +9,22 @@ local Window = Rayfield:CreateWindow({
    ConfigurationSaving = {
       Enabled = true,
       FolderName = "JozexConfigs",
-      FileName = "Main"
+      FileName = "MainConfig"
    },
    Discord = {
       Enabled = false
    },
-   KeySystem = false -- IMPORTANT: Set to false so it opens instantly
+   KeySystem = false -- NO KEY SYSTEM AS REQUESTED
 })
 
-local MainTab = Window:CreateTab("Player", 4483362458)
+local MainTab = Window:CreateTab("Movement", 4483362458)
 
 MainTab:CreateSlider({
    Name = "Walk Speed",
    Range = {16, 300},
    Increment = 1,
    CurrentValue = 16,
+   Flag = "WS_Flag",
    Callback = function(Value)
       game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
    end,
@@ -34,6 +35,7 @@ MainTab:CreateSlider({
    Range = {50, 500},
    Increment = 1,
    CurrentValue = 50,
+   Flag = "JP_Flag",
    Callback = function(Value)
       game.Players.LocalPlayer.Character.Humanoid.UseJumpPower = true
       game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
@@ -46,6 +48,7 @@ local CamLock = false
 CombatTab:CreateToggle({
    Name = "Cam Lock (Nearest)",
    CurrentValue = false,
+   Flag = "CamLock_Flag",
    Callback = function(Value)
       CamLock = Value
       task.spawn(function()
@@ -69,6 +72,6 @@ CombatTab:CreateToggle({
 
 Rayfield:Notify({
    Title = "Success!",
-   Content = "Jozex Beta has loaded.",
-   Duration = 3
+   Content = "Jozex Beta Loaded Successfully",
+   Duration = 5
 })
