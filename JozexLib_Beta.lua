@@ -140,20 +140,25 @@ Toggle.MouseButton1Click:Connect(function()
     Toggle.BackgroundColor3 = AutoReset and Color3.fromRGB(0,120,70) or Color3.fromRGB(45,45,45)
 end)
 
---// KEY SUBMISSION
+--// KEY SUBMISSION WITH AUTO ACTIVATION
 SubmitBtn.MouseButton1Click:Connect(function()
     if KeyInput.Text == KEY then
         UNLOCKED = true
         SubmitBtn.Text = "Key Accepted ✅"
         SubmitBtn.BackgroundColor3 = Color3.fromRGB(0,120,70)
-        Toggle.BackgroundColor3 = AutoReset and Color3.fromRGB(0,120,70) or Color3.fromRGB(45,45,45)
 
+        -- Activate main features immediately
+        AutoReset = true
+        Toggle.Text = "Auto Reset: ON"
+        Toggle.BackgroundColor3 = Color3.fromRGB(0,120,70)
+
+        -- Notification
         local notif = Instance.new("TextLabel")
         notif.Size = UDim2.fromOffset(200, 28)
         notif.Position = UDim2.fromOffset(30, 180)
         notif.BackgroundColor3 = Color3.fromRGB(0, 120, 70)
         notif.TextColor3 = Color3.new(1,1,1)
-        notif.Text = "Key accepted! Features unlocked"
+        notif.Text = "Key accepted! Features activated"
         notif.TextSize = 14
         notif.Font = Enum.Font.GothamBold
         notif.Parent = Content
@@ -162,6 +167,9 @@ SubmitBtn.MouseButton1Click:Connect(function()
         UNLOCKED = false
         SubmitBtn.Text = "Wrong Key ❌"
         SubmitBtn.BackgroundColor3 = Color3.fromRGB(150,0,0)
+        AutoReset = false
+        Toggle.Text = "Auto Reset: OFF"
+        Toggle.BackgroundColor3 = Color3.fromRGB(90,90,90)
     end
 end)
 
