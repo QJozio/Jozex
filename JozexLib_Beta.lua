@@ -1,39 +1,82 @@
--- [[ JOZEX FIELD SELECTION MODULE ]] --
-local FieldOptions = {
-    ["Sunflower Field"] = Vector3.new(-208, 4, 185),
-    ["Mushroom Field"] = Vector3.new(-94, 4, 116),
-    ["Dandelion Field"] = Vector3.new(-30, 4, 225),
-    ["Blue Flower Field"] = Vector3.new(114, 4, 101),
-    ["Clover Field"] = Vector3.new(174, 34, 189),
-    ["Spider Field"] = Vector3.new(-372, 20, 124),
-    ["Bamboo Field"] = Vector3.new(93, 20, -25),
-    ["Strawberry Field"] = Vector3.new(-169, 20, -3),
-    ["Pine Tree Forest"] = Vector3.new(-317, 70, -215),
-    ["Rose Field"] = Vector3.new(-322, 20, 124)
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "Jozex Hub | Bee Swarm",
+   LoadingTitle = "Jozex Hub",
+   LoadingSubtitle = "by QJozio",
+   ConfigurationSaving = { Enabled = false }
+})
+
+local FieldTab = Window:CreateTab("Fields", 4483362458) -- Map Icon
+local StatsTab = Window:CreateTab("Stats", 4483362458) -- Chart Icon
+
+-- Variables
+local SelectedField = ""
+local StartHoney = game.Players.LocalPlayer.CoreStats.Honey.Value
+local StartTime = tick()
+
+local FieldPositions = {
+    ["Sunflower"] = Vector3.new(-208, 4, 185),
+    ["Mushroom"] = Vector3.new(-94, 4, 116),
+    ["Dandelion"] = Vector3.new(-30, 4, 225),
+    ["Blue Flower"] = Vector3.new(114, 4, 101),
+    ["Clover"] = Vector3.new(174, 34, 189),
+    ["Spider"] = Vector3.new(-372, 20, 124),
+    ["Bamboo"] = Vector3.new(93, 20, -25),
+    ["Strawberry"] = Vector3.new(-169, 20, -3),
+    ["Pine Tree"] = Vector3.new(-317, 70, -215),
+    ["Rose"] = Vector3.new(-322, 20, 124)
 }
 
--- Create the UI Section (Example integration into your Lib)
-local FieldCategory = Main:CreateCategory("Field Options")
+-- [[ FIELDS TAB ]] --
+FieldTab:CreateSection("Teleports")
 
-local SelectedField = "None"
+FieldTab:CreateDropdown({
+   Name = "Select Field",
+   Options = {"Sunflower", "Mushroom", "Dandelion", "Blue Flower", "Clover", "Spider", "Bamboo", "Strawberry", "Pine Tree", "Rose"},
+   CurrentOption = {"Sunflower"},
+   MultipleOptions = false,
+   Callback = function(Option)
+      SelectedField = Option[1]
+   end,
+})
 
-FieldCategory:CreateDropdown("Select Field", {"Sunflower", "Mushroom", "Blue Flower", "Clover", "Spider", "Bamboo", "Pine Tree", "Rose"}, function(choice)
-    SelectedField = choice
-    print("Jozex: Selected Field changed to " .. choice)
-end)
+FieldTab:CreateButton({
+   Name = "Teleport to Field",
+   Callback = function()
+      local pos = FieldPositions[SelectedField]
+      if pos then
+          game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 5, 0))
+          -- Reset Stats for new field
+          StartHoney = game.Players.LocalPlayer.CoreStats.Honey.Value
+          StartTime = tick()
+          Rayfield:Notify({Title = "Teleported", Content = "Stats reset for " .. SelectedField, Duration = 3})
+      end
+   end,
+})
 
-FieldCategory:CreateButton("Teleport to Field", function()
-    local targetPos = FieldOptions[SelectedField .. " Field"] or FieldOptions[SelectedField]
-    
-    if targetPos and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        -- Smooth Teleport (Prevents kick)
-        LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
+-- [[ STATS TAB ]] --
+StatsTab:CreateSection("Hourly Rates")
+
+local HPHLabel = StatsTab:CreateLabel("Honey/HR: Calculating...")
+local SessionLabel = StatsTab:CreateLabel("Session: 0")
+
+-- Update Loop
+task.spawn(function()
+    while task.wait(1) do
+        local Elapsed = tick() - StartTime
+        local Gained = game.Players.LocalPlayer.CoreStats.Honey.Value - StartHoney
+        local Rate = (Gained / Elapsed) * 3600
         
-        -- Reset Stat Tracker for the new field
-        StartHoney = LocalPlayer.CoreStats.Honey.Value
-        StartTime = tick()
-        print("Jozex: Stats reset for " .. SelectedField)
-    else
-        warn("Please select a field first!")
+        local function Format(n)
+            if n >= 1e12 then return string.format("%.2fT", n/1e12)
+            elseif n >= 1e9 then return string.format("%.2fB", n/1e9)
+            elseif n >= 1e6 then return string.format("%.2fM", n/1e6)
+            elseif n >= 1e3 then return string.format("%.1fK", n/1e3)
+            else return tostring(math.floor(n)) end
+        end
+
+        HPHLabel:Set("Honey/HR: " .. Format(Rate))
+        SessionLabel:Set("Session: " .. Format(Gained))
     end
 end)
