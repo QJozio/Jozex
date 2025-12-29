@@ -36,6 +36,7 @@ local FieldPositions = {
     ["Pine Tree"] = Vector3.new(-317, 70, -215),
     ["Rose"] = Vector3.new(-322, 20, 124)
 }
+
 local FieldRadiusOverride = {
     ["Sunflower"] = 12, ["Mushroom"] = 11, ["Dandelion"] = 13,
     ["Blue Flower"] = 13, ["Clover"] = 15, ["Spider"] = 14,
@@ -46,10 +47,14 @@ local FieldRadiusOverride = {
 --// Autofarm Variables
 local AutoFarm = false
 local AutoConvert = true
+local AutoClick = false
 local CurrentTween = nil
 local State = "FARM"
 local FIELD_RADIUS = 14
 local CONVERT_AT = 0.9 -- 90% backpack
+
+-- Zig-zag movement state
+local ZigZagState = {xDir = 1, zDir = 1, step = 4}
 
 --// FIELD TAB
 FieldTab:CreateSection("Teleports")
@@ -80,7 +85,7 @@ FieldTab:CreateButton({
 
 -- Auto Farm Toggle
 FieldTab:CreateToggle({
-    Name = "Auto Farm (Tween + Convert)",
+    Name = "Auto Farm (Tween + Convert + ZigZag)",
     CurrentValue = false,
     Callback = function(v)
         AutoFarm = v
@@ -91,6 +96,20 @@ FieldTab:CreateToggle({
         end
         Rayfield:Notify({
             Title = "Auto Farm",
+            Content = v and "Enabled" or "Disabled",
+            Duration = 2
+        })
+    end
+})
+
+-- Auto Click Toggle
+FieldTab:CreateToggle({
+    Name = "Auto Click Flowers",
+    CurrentValue = false,
+    Callback = function(v)
+        AutoClick = v
+        Rayfield:Notify({
+            Title = "Auto Click",
             Content = v and "Enabled" or "Disabled",
             Duration = 2
         })
@@ -141,13 +160,27 @@ local function TweenTo(hrp, target)
     CurrentTween = nil
 end
 
---// Safe Random Field Point
-local function GetSafePoint(field)
+--// Zig-Zag Target
+local function GetZigZagTarget(field)
     local center = FieldPositions[field]
     local radius = FieldRadiusOverride[field] or FIELD_RADIUS
-    local angle = math.random() * math.pi * 2
-    local dist = math.random(radius*0.4, radius)
-    return center + Vector3.new(math.cos(angle)*dist, 0, math.sin(angle)*dist)
+
+    local xDir = ZigZagState.xDir
+    local zDir = ZigZagState.zDir
+    local step = ZigZagState.step
+
+    local target = center + Vector3.new(
+        (math.random()*radius*0.7 + radius*0.3)*xDir,
+        0,
+        (math.random()*radius*0.7 + radius*0.3)*zDir
+    )
+
+    if (target - center).Magnitude >= radius then
+        ZigZagState.xDir = -ZigZagState.xDir
+        ZigZagState.zDir = -ZigZagState.zDir
+    end
+
+    return target
 end
 
 --// AUTO FARM LOOP
@@ -182,10 +215,22 @@ task.spawn(function()
 
         -- FARM STATE
         if State == "FARM" and not CurrentTween then
-            local target = GetSafePoint(SelectedField)
+            local target = GetZigZagTarget(SelectedField)
             local dir = target - hrp.Position
             if not IsBlocked(hrp.Position, dir, char) then
                 TweenTo(hrp, target)
+            end
+        end
+    end
+end)
+
+--// AUTO CLICK LOOP
+task.spawn(function()
+    while task.wait(0.1) do
+        if AutoFarm and AutoClick and State == "FARM" then
+            local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if tool then
+                tool:Activate()
             end
         end
     end
