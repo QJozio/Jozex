@@ -4,13 +4,11 @@ local LocalPlayer = Players.LocalPlayer
 local Debris = game:GetService("Debris")
 
 --// CONFIG
-local COIN_BAG_MAX = 40
-local AutoReset = false
-local UNLOCKED = false
-local KEY = "JOZEX-MM2-2025" -- Your key
+local KEY = "JOZEX-MM2-2025" -- your key
 local KEY_LINK = "https://direct-link.net/2552546/CxGwpvRqOVJH"
+local COIN_BAG_MAX = 40
 
---// UTILS
+--// FUNCTIONS
 local function CreateDraggableFrame(name, size, pos)
     local frame = Instance.new("Frame")
     frame.Name = name
@@ -65,10 +63,9 @@ local function CreateDraggableFrame(name, size, pos)
     return frame, content
 end
 
---// CREATE KEY UI
-local KeyFrame, KeyContent = CreateDraggableFrame("Submit Key", UDim2.fromOffset(260,150), UDim2.fromScale(0.35,0.35))
+--// KEY UI
+local KeyFrame, KeyContent = CreateDraggableFrame("Enter Key", UDim2.fromOffset(260,150), UDim2.fromScale(0.35,0.35))
 
--- Key Input
 local KeyInput = Instance.new("TextBox")
 KeyInput.Size = UDim2.fromOffset(200,32)
 KeyInput.Position = UDim2.fromOffset(30,10)
@@ -79,7 +76,6 @@ KeyInput.BackgroundColor3 = Color3.fromRGB(45,45,45)
 KeyInput.Parent = KeyContent
 Instance.new("UICorner", KeyInput)
 
--- Submit Button
 local SubmitBtn = Instance.new("TextButton")
 SubmitBtn.Size = UDim2.fromOffset(200,32)
 SubmitBtn.Position = UDim2.fromOffset(30,50)
@@ -91,7 +87,6 @@ SubmitBtn.TextColor3 = Color3.new(1,1,1)
 SubmitBtn.Parent = KeyContent
 Instance.new("UICorner", SubmitBtn)
 
--- Copy Link Button
 local CopyBtn = Instance.new("TextButton")
 CopyBtn.Size = UDim2.fromOffset(200,32)
 CopyBtn.Position = UDim2.fromOffset(30,90)
@@ -119,31 +114,6 @@ CopyBtn.MouseButton1Click:Connect(function()
     end
 end)
 
---// CREATE MAIN FEATURES UI
-local MainFrame, MainContent = CreateDraggableFrame("Main Features", UDim2.fromOffset(260,160), UDim2.fromScale(0.65,0.35))
-
--- Auto Reset toggle
-local Toggle = Instance.new("TextButton")
-Toggle.Size = UDim2.fromOffset(200,36)
-Toggle.Position = UDim2.fromOffset(30,20)
-Toggle.Text = "Auto Reset: OFF"
-Toggle.Font = Enum.Font.GothamBold
-Toggle.TextSize = 14
-Toggle.BackgroundColor3 = Color3.fromRGB(90,90,90) -- greyed until key
-Toggle.TextColor3 = Color3.new(1,1,1)
-Toggle.Parent = MainContent
-Instance.new("UICorner", Toggle)
-
-Toggle.MouseButton1Click:Connect(function()
-    if not UNLOCKED then
-        Toggle.Text = "Enter Key First!"
-        return
-    end
-    AutoReset = not AutoReset
-    Toggle.Text = AutoReset and "Auto Reset: ON" or "Auto Reset: OFF"
-    Toggle.BackgroundColor3 = AutoReset and Color3.fromRGB(0,120,70) or Color3.fromRGB(45,45,45)
-end)
-
 --// HELPER FUNCTIONS
 local function CoinBagFull()
     local stats = LocalPlayer:FindFirstChild("leaderstats")
@@ -158,51 +128,59 @@ local function IsMurderer()
     return char and char:FindFirstChild("Knife") ~= nil
 end
 
+--// RAYFIELD MAIN FEATURES UI
+local function LoadMainFeatures()
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+    local Window = Rayfield:CreateWindow({
+       Name = "Jozex Hub | MM2",
+       LoadingTitle = "Jozex Hub",
+       LoadingSubtitle = "by QJozio",
+       ConfigurationSaving = { Enabled = false }
+    })
+
+    local MainTab = Window:CreateTab("Main", 4483362458)
+
+    local AutoResetToggle = false
+
+    MainTab:CreateSection("Auto Reset")
+
+    local ToggleButton = MainTab:CreateToggle({
+        Name = "Auto Reset (Murderer + Bag Full)",
+        CurrentValue = false,
+        Flag = "AutoReset",
+        Callback = function(value)
+            AutoResetToggle = value
+        end
+    })
+
+    -- Loop for auto-reset
+    task.spawn(function()
+        while task.wait(0.5) do
+            if AutoResetToggle and IsMurderer() and CoinBagFull() then
+                local char = LocalPlayer.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum then
+                        hum.Health = 0
+                    end
+                end
+                task.wait(6)
+            end
+        end
+    end)
+end
+
 --// KEY SUBMISSION LOGIC
 SubmitBtn.MouseButton1Click:Connect(function()
     if KeyInput.Text == KEY then
-        UNLOCKED = true
-        SubmitBtn.Text = "Key Accepted ✅"
-        SubmitBtn.BackgroundColor3 = Color3.fromRGB(0,120,70)
+        -- Destroy key UI
+        KeyFrame:Destroy()
 
-        -- Activate main features
-        AutoReset = true
-        Toggle.Text = "Auto Reset: ON"
-        Toggle.BackgroundColor3 = Color3.fromRGB(0,120,70)
-
-        -- Notification
-        local notif = Instance.new("TextLabel")
-        notif.Size = UDim2.fromOffset(200,28)
-        notif.Position = UDim2.fromOffset(30,120)
-        notif.BackgroundColor3 = Color3.fromRGB(0,120,70)
-        notif.TextColor3 = Color3.new(1,1,1)
-        notif.Text = "Key accepted! Features activated"
-        notif.TextSize = 14
-        notif.Font = Enum.Font.GothamBold
-        notif.Parent = KeyContent
-        Debris:AddItem(notif,3)
+        -- Load main Rayfield features
+        LoadMainFeatures()
     else
-        UNLOCKED = false
         SubmitBtn.Text = "Wrong Key ❌"
         SubmitBtn.BackgroundColor3 = Color3.fromRGB(150,0,0)
-        AutoReset = false
-        Toggle.Text = "Auto Reset: OFF"
-        Toggle.BackgroundColor3 = Color3.fromRGB(90,90,90)
-    end
-end)
-
---// MAIN LOOP
-task.spawn(function()
-    while task.wait(0.5) do
-        if AutoReset and UNLOCKED and IsMurderer() and CoinBagFull() then
-            local char = LocalPlayer.Character
-            if char then
-                local hum = char:FindFirstChildOfClass("Humanoid")
-                if hum then
-                    hum.Health = 0
-                end
-            end
-            task.wait(6)
-        end
     end
 end)
