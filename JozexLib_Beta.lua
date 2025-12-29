@@ -1,269 +1,173 @@
---// Rayfield Loader
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
-
-local Window = Rayfield:CreateWindow({
-    Name = "Jozex Hub | MM2",
-    LoadingTitle = "Jozex Hub",
-    LoadingSubtitle = "MM2 Legit Edition",
-    ConfigurationSaving = {Enabled = false}
-})
-
---// Services
+--// SERVICES
 local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
+local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
-local Camera = Workspace.CurrentCamera
 
---// Tabs
-local CombatTab = Window:CreateTab("Combat", 4483362458)
-local ESPTab = Window:CreateTab("ESP", 4483362458)
-local AimTab = Window:CreateTab("Aimbot", 4483362458)
-local MiscTab = Window:CreateTab("Misc", 4483362458)
+--// CONFIG
+local COIN_BAG_MAX = 40
+local AutoReset = false
+local UNLOCKED = false
+local KEY = "JOZEX-MM2-2025" -- Change this to your key
+local KEY_LINK = "https://direct-link.net/2552546/CxGwpvRqOVJH"
 
---// Toggles / Settings
-local AutoKill = false
-local AutoShoot = false
-local CoinFarm = false
-local ESPEnabled = false
+--// GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MM2MiniUI"
+ScreenGui.Parent = game.CoreGui
 
-local AimbotEnabled = false
-local AimbotFOV = 250
-local AimbotSmooth = 0.15
-local AimPriority = "Murderer"
+local Main = Instance.new("Frame")
+Main.Size = UDim2.fromOffset(260, 220)
+Main.Position = UDim2.fromScale(0.35, 0.35)
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Main.Parent = ScreenGui
 
---// Helpers
-local function GetRole(plr)
-    if plr.Character then
-        if plr.Character:FindFirstChild("Knife") then
-            return "Murderer"
-        elseif plr.Character:FindFirstChild("Gun") then
-            return "Sheriff"
-        end
-    end
-    return "Innocent"
-end
+local UICorner = Instance.new("UICorner", Main)
+UICorner.CornerRadius = UDim.new(0, 10)
 
-local function SafeActivate(tool)
-    pcall(function()
-        if tool and tool.Parent == LocalPlayer.Character then
-            tool:Activate()
-        end
-    end)
-end
+--// TITLE BAR
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -60, 0, 32)
+Title.Position = UDim2.fromOffset(10, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "MM2 Helper"
+Title.TextColor3 = Color3.new(1,1,1)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 14
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Main
 
---------------------------------------------------
--- ESP
---------------------------------------------------
-local ESPObjects = {}
+--// MINIMIZE BUTTON
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.fromOffset(28, 24)
+MinBtn.Position = UDim2.new(1, -34, 0, 4)
+MinBtn.Text = "-"
+MinBtn.TextSize = 20
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+MinBtn.TextColor3 = Color3.new(1,1,1)
+MinBtn.Parent = Main
+Instance.new("UICorner", MinBtn)
 
-local function CreateESP(plr)
-    if plr == LocalPlayer or ESPObjects[plr] then return end
-    pcall(function()
-        local box = Drawing.new("Square")
-        box.Thickness = 1
-        box.Transparency = 1
-        box.Visible = false
-        ESPObjects[plr] = box
-    end)
-end
+--// CONTENT FRAME
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -20, 1, -42)
+Content.Position = UDim2.fromOffset(10, 36)
+Content.BackgroundTransparency = 1
+Content.Parent = Main
 
-local function RemoveESP(plr)
-    if ESPObjects[plr] then
-        pcall(function() ESPObjects[plr]:Remove() end)
-        ESPObjects[plr] = nil
-    end
-end
+local minimized = false
+MinBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    Content.Visible = not minimized
+    Main.Size = minimized and UDim2.fromOffset(260, 36) or UDim2.fromOffset(260, 220)
+end)
 
-for _,p in pairs(Players:GetPlayers()) do CreateESP(p) end
-Players.PlayerAdded:Connect(CreateESP)
-Players.PlayerRemoving:Connect(RemoveESP)
+--// KEY INPUT
+local KeyInput = Instance.new("TextBox")
+KeyInput.Size = UDim2.fromOffset(200, 32)
+KeyInput.Position = UDim2.fromOffset(30, 10)
+KeyInput.PlaceholderText = "Enter Key"
+KeyInput.ClearTextOnFocus = false
+KeyInput.Text = ""
+KeyInput.TextColor3 = Color3.new(1,1,1)
+KeyInput.BackgroundColor3 = Color3.fromRGB(45,45,45)
+KeyInput.Parent = Content
+Instance.new("UICorner", KeyInput)
 
-RunService.RenderStepped:Connect(function()
-    for plr,box in pairs(ESPObjects) do
-        if ESPEnabled and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = plr.Character.HumanoidRootPart
-            local pos, onscreen = Camera:WorldToViewportPoint(hrp.Position)
-            if onscreen then
-                local size = math.clamp(2000 / pos.Z, 20, 200)
-                box.Size = Vector2.new(size, size * 1.5)
-                box.Position = Vector2.new(pos.X - size/2, pos.Y - size)
-                box.Visible = true
+--// SUBMIT BUTTON
+local SubmitBtn = Instance.new("TextButton")
+SubmitBtn.Size = UDim2.fromOffset(200, 32)
+SubmitBtn.Position = UDim2.fromOffset(30, 50)
+SubmitBtn.Text = "Submit Key"
+SubmitBtn.Font = Enum.Font.GothamBold
+SubmitBtn.TextSize = 14
+SubmitBtn.BackgroundColor3 = Color3.fromRGB(45,45,45)
+SubmitBtn.TextColor3 = Color3.new(1,1,1)
+SubmitBtn.Parent = Content
+Instance.new("UICorner", SubmitBtn)
 
-                local role = GetRole(plr)
-                if role == "Murderer" then
-                    box.Color = Color3.fromRGB(255,0,0)
-                elseif role == "Sheriff" then
-                    box.Color = Color3.fromRGB(0,0,255)
-                else
-                    box.Color = Color3.fromRGB(0,255,0)
-                end
-            else
-                box.Visible = false
-            end
-        else
-            box.Visible = false
-        end
+SubmitBtn.MouseButton1Click:Connect(function()
+    if KeyInput.Text == KEY then
+        UNLOCKED = true
+        SubmitBtn.Text = "Key Accepted ✅"
+        SubmitBtn.BackgroundColor3 = Color3.fromRGB(0,120,70)
+    else
+        UNLOCKED = false
+        SubmitBtn.Text = "Wrong Key ❌"
+        SubmitBtn.BackgroundColor3 = Color3.fromRGB(150,0,0)
     end
 end)
 
---------------------------------------------------
--- Aimbot
---------------------------------------------------
-local function GetAimbotTarget()
-    local best, bestDist = nil, math.huge
-    for _,plr in pairs(Players:GetPlayers()) do
-        if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = plr.Character.HumanoidRootPart
-            local pos, onscreen = Camera:WorldToViewportPoint(hrp.Position)
-            if onscreen then
-                local dist = (Vector2.new(pos.X, pos.Y) -
-                             Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)).Magnitude
-                if dist < AimbotFOV and dist < bestDist then
-                    local role = GetRole(plr)
-                    if AimPriority == "Nearest"
-                    or (AimPriority == "Murderer" and role == "Murderer")
-                    or (AimPriority == "Sheriff" and role == "Sheriff") then
-                        best = hrp
-                        bestDist = dist
-                    end
-                end
-            end
-        end
-    end
-    return best
-end
+--// COPY LINK BUTTON
+local CopyBtn = Instance.new("TextButton")
+CopyBtn.Size = UDim2.fromOffset(200, 32)
+CopyBtn.Position = UDim2.fromOffset(30, 90)
+CopyBtn.Text = "Copy Key Link"
+CopyBtn.Font = Enum.Font.GothamBold
+CopyBtn.TextSize = 14
+CopyBtn.BackgroundColor3 = Color3.fromRGB(45,45,45)
+CopyBtn.TextColor3 = Color3.new(1,1,1)
+CopyBtn.Parent = Content
+Instance.new("UICorner", CopyBtn)
 
-RunService.RenderStepped:Connect(function()
-    if not AimbotEnabled then return end
-    local target = GetAimbotTarget()
-    if target then
-        local camPos = Camera.CFrame.Position
-        Camera.CFrame = Camera.CFrame:Lerp(
-            CFrame.new(camPos, target.Position),
-            AimbotSmooth
-        )
+CopyBtn.MouseButton1Click:Connect(function()
+    if setclipboard then
+        setclipboard(KEY_LINK)
     end
 end)
 
---------------------------------------------------
--- Auto Coin Farm
---------------------------------------------------
+--// TOGGLE BUTTON
+local Toggle = Instance.new("TextButton")
+Toggle.Size = UDim2.fromOffset(200, 36)
+Toggle.Position = UDim2.fromOffset(30, 140)
+Toggle.Text = "Auto Reset: OFF"
+Toggle.Font = Enum.Font.GothamBold
+Toggle.TextSize = 14
+Toggle.BackgroundColor3 = Color3.fromRGB(45,45,45)
+Toggle.TextColor3 = Color3.new(1,1,1)
+Toggle.Parent = Content
+Instance.new("UICorner", Toggle)
+
+Toggle.MouseButton1Click:Connect(function()
+    if not UNLOCKED then
+        Toggle.Text = "Enter Key First!"
+        return
+    end
+    AutoReset = not AutoReset
+    Toggle.Text = AutoReset and "Auto Reset: ON" or "Auto Reset: OFF"
+    Toggle.BackgroundColor3 = AutoReset and Color3.fromRGB(0,120,70) or Color3.fromRGB(45,45,45)
+end)
+
+--// CHECK COIN BAG
+local function CoinBagFull()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    if not stats then return false end
+    local coins = stats:FindFirstChild("Coins")
+    if not coins then return false end
+    return coins.Value >= COIN_BAG_MAX
+end
+
+--// CHECK MURDERER
+local function IsMurderer()
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChild("Knife") ~= nil
+end
+
+--// MAIN LOOP
 task.spawn(function()
     while task.wait(0.5) do
-        if CoinFarm and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            for _,coin in pairs(Workspace:GetDescendants()) do
-                if coin.Name == "Coin_Server" and coin:IsA("BasePart") then
-                    pcall(function()
-                        LocalPlayer.Character.HumanoidRootPart.CFrame =
-                            coin.CFrame + Vector3.new(0,2,0)
-                    end)
+        if AutoReset and UNLOCKED and IsMurderer() and CoinBagFull() then
+            local char = LocalPlayer.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum then
+                    hum.Health = 0
                 end
             end
+            task.wait(6) -- anti loop
         end
     end
 end)
-
---------------------------------------------------
--- Auto Combat (Close Range)
---------------------------------------------------
-task.spawn(function()
-    while task.wait(0.25) do
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then continue end
-
-        for _,plr in pairs(Players:GetPlayers()) do
-            if plr ~= LocalPlayer and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
-                local dist = (char.HumanoidRootPart.Position -
-                              plr.Character.HumanoidRootPart.Position).Magnitude
-                if dist < 20 then
-                    if AutoKill and char:FindFirstChild("Knife") then
-                        SafeActivate(char.Knife)
-                    elseif AutoShoot and char:FindFirstChild("Gun") then
-                        SafeActivate(char.Gun)
-                    end
-                end
-            end
-        end
-    end
-end)
-
---------------------------------------------------
--- UI
---------------------------------------------------
-CombatTab:CreateToggle({
-    Name = "Auto Knife (Murderer)",
-    CurrentValue = false,
-    Callback = function(v) AutoKill = v end
-})
-
-CombatTab:CreateToggle({
-    Name = "Auto Shoot (Sheriff)",
-    CurrentValue = false,
-    Callback = function(v) AutoShoot = v end
-})
-
-ESPTab:CreateToggle({
-    Name = "Enable ESP",
-    CurrentValue = false,
-    Callback = function(v) ESPEnabled = v end
-})
-
-AimTab:CreateToggle({
-    Name = "Enable Aimbot",
-    CurrentValue = false,
-    Callback = function(v) AimbotEnabled = v end
-})
-
-AimTab:CreateDropdown({
-    Name = "Aim Priority",
-    Options = {"Murderer","Sheriff","Nearest"},
-    CurrentOption = {"Murderer"},
-    Callback = function(opt) AimPriority = opt[1] end
-})
-
-AimTab:CreateSlider({
-    Name = "Aimbot FOV",
-    Range = {50,600},
-    Increment = 10,
-    CurrentValue = 250,
-    Callback = function(v) AimbotFOV = v end
-})
-
-AimTab:CreateSlider({
-    Name = "Smoothness",
-    Range = {0.05,0.5},
-    Increment = 0.05,
-    CurrentValue = 0.15,
-    Callback = function(v) AimbotSmooth = v end
-})
-
-MiscTab:CreateToggle({
-    Name = "Auto Collect Coins",
-    CurrentValue = false,
-    Callback = function(v) CoinFarm = v end
-})
-
-MiscTab:CreateSlider({
-    Name = "WalkSpeed",
-    Range = {16,50},
-    Increment = 1,
-    CurrentValue = 16,
-    Callback = function(v)
-        if LocalPlayer.Character then
-            LocalPlayer.Character.Humanoid.WalkSpeed = v
-        end
-    end
-})
-
-MiscTab:CreateSlider({
-    Name = "JumpPower",
-    Range = {50,120},
-    Increment = 5,
-    CurrentValue = 50,
-    Callback = function(v)
-        if LocalPlayer.Character then
-            LocalPlayer.Character.Humanoid.JumpPower = v
-        end
-    end
-})
