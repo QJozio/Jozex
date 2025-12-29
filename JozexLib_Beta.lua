@@ -1,6 +1,5 @@
 --// SERVICES
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
 local LocalPlayer = Players.LocalPlayer
 local Debris = game:GetService("Debris")
 
@@ -8,126 +7,131 @@ local Debris = game:GetService("Debris")
 local COIN_BAG_MAX = 40
 local AutoReset = false
 local UNLOCKED = false
-local KEY = "JOZEX-MM2-2025" -- change this to your key
+local KEY = "JOZEX-MM2-2025" -- Your key
 local KEY_LINK = "https://direct-link.net/2552546/CxGwpvRqOVJH"
 
---// GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MM2MiniUI"
-ScreenGui.Parent = game.CoreGui
+--// UTILS
+local function CreateDraggableFrame(name, size, pos)
+    local frame = Instance.new("Frame")
+    frame.Name = name
+    frame.Size = size
+    frame.Position = pos
+    frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+    frame.BorderSizePixel = 0
+    frame.Active = true
+    frame.Draggable = true
+    frame.Parent = game.CoreGui
 
-local Main = Instance.new("Frame")
-Main.Size = UDim2.fromOffset(260, 220)
-Main.Position = UDim2.fromScale(0.35, 0.35)
-Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-Main.BorderSizePixel = 0
-Main.Active = true
-Main.Draggable = true
-Main.Parent = ScreenGui
+    local corner = Instance.new("UICorner", frame)
+    corner.CornerRadius = UDim.new(0,10)
 
-local UICorner = Instance.new("UICorner", Main)
-UICorner.CornerRadius = UDim.new(0, 10)
+    -- Title bar
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1,-60,0,32)
+    title.Position = UDim2.fromOffset(10,0)
+    title.BackgroundTransparency = 1
+    title.Text = name
+    title.TextColor3 = Color3.new(1,1,1)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 14
+    title.TextXAlignment = Enum.TextXAlignment.Left
+    title.Parent = frame
 
---// TITLE BAR
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, -60, 0, 32)
-Title.Position = UDim2.fromOffset(10, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "MM2 Helper"
-Title.TextColor3 = Color3.new(1,1,1)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 14
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Main
+    -- Minimize button
+    local minBtn = Instance.new("TextButton")
+    minBtn.Size = UDim2.fromOffset(28,24)
+    minBtn.Position = UDim2.new(1,-34,0,4)
+    minBtn.Text = "-"
+    minBtn.TextSize = 20
+    minBtn.Font = Enum.Font.GothamBold
+    minBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    minBtn.TextColor3 = Color3.new(1,1,1)
+    minBtn.Parent = frame
+    Instance.new("UICorner", minBtn)
 
---// MINIMIZE BUTTON
-local MinBtn = Instance.new("TextButton")
-MinBtn.Size = UDim2.fromOffset(28, 24)
-MinBtn.Position = UDim2.new(1, -34, 0, 4)
-MinBtn.Text = "-"
-MinBtn.TextSize = 20
-MinBtn.Font = Enum.Font.GothamBold
-MinBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
-MinBtn.TextColor3 = Color3.new(1,1,1)
-MinBtn.Parent = Main
-Instance.new("UICorner", MinBtn)
+    local content = Instance.new("Frame")
+    content.Size = UDim2.new(1,-20,1,-42)
+    content.Position = UDim2.fromOffset(10,36)
+    content.BackgroundTransparency = 1
+    content.Parent = frame
 
---// CONTENT FRAME
-local Content = Instance.new("Frame")
-Content.Size = UDim2.new(1, -20, 1, -42)
-Content.Position = UDim2.fromOffset(10, 36)
-Content.BackgroundTransparency = 1
-Content.Parent = Main
+    local minimized = false
+    minBtn.MouseButton1Click:Connect(function()
+        minimized = not minimized
+        content.Visible = not minimized
+        frame.Size = minimized and UDim2.fromOffset(size.X.Offset,36) or size
+    end)
 
-local minimized = false
-MinBtn.MouseButton1Click:Connect(function()
-    minimized = not minimized
-    Content.Visible = not minimized
-    Main.Size = minimized and UDim2.fromOffset(260, 36) or UDim2.fromOffset(260, 220)
-end)
+    return frame, content
+end
 
---// KEY INPUT
+--// CREATE KEY UI
+local KeyFrame, KeyContent = CreateDraggableFrame("Submit Key", UDim2.fromOffset(260,150), UDim2.fromScale(0.35,0.35))
+
+-- Key Input
 local KeyInput = Instance.new("TextBox")
-KeyInput.Size = UDim2.fromOffset(200, 32)
-KeyInput.Position = UDim2.fromOffset(30, 10)
+KeyInput.Size = UDim2.fromOffset(200,32)
+KeyInput.Position = UDim2.fromOffset(30,10)
 KeyInput.PlaceholderText = "Enter Key"
 KeyInput.ClearTextOnFocus = false
-KeyInput.Text = ""
 KeyInput.TextColor3 = Color3.new(1,1,1)
 KeyInput.BackgroundColor3 = Color3.fromRGB(45,45,45)
-KeyInput.Parent = Content
+KeyInput.Parent = KeyContent
 Instance.new("UICorner", KeyInput)
 
---// SUBMIT BUTTON
+-- Submit Button
 local SubmitBtn = Instance.new("TextButton")
-SubmitBtn.Size = UDim2.fromOffset(200, 32)
-SubmitBtn.Position = UDim2.fromOffset(30, 50)
+SubmitBtn.Size = UDim2.fromOffset(200,32)
+SubmitBtn.Position = UDim2.fromOffset(30,50)
 SubmitBtn.Text = "Submit Key"
 SubmitBtn.Font = Enum.Font.GothamBold
 SubmitBtn.TextSize = 14
 SubmitBtn.BackgroundColor3 = Color3.fromRGB(45,45,45)
 SubmitBtn.TextColor3 = Color3.new(1,1,1)
-SubmitBtn.Parent = Content
+SubmitBtn.Parent = KeyContent
 Instance.new("UICorner", SubmitBtn)
 
---// COPY LINK BUTTON
+-- Copy Link Button
 local CopyBtn = Instance.new("TextButton")
-CopyBtn.Size = UDim2.fromOffset(200, 32)
-CopyBtn.Position = UDim2.fromOffset(30, 90)
+CopyBtn.Size = UDim2.fromOffset(200,32)
+CopyBtn.Position = UDim2.fromOffset(30,90)
 CopyBtn.Text = "Copy Key Link"
 CopyBtn.Font = Enum.Font.GothamBold
 CopyBtn.TextSize = 14
 CopyBtn.BackgroundColor3 = Color3.fromRGB(45,45,45)
 CopyBtn.TextColor3 = Color3.new(1,1,1)
-CopyBtn.Parent = Content
+CopyBtn.Parent = KeyContent
 Instance.new("UICorner", CopyBtn)
 
 CopyBtn.MouseButton1Click:Connect(function()
     if setclipboard then
         setclipboard(KEY_LINK)
         local notif = Instance.new("TextLabel")
-        notif.Size = UDim2.fromOffset(200, 28)
-        notif.Position = UDim2.fromOffset(30, 180)
+        notif.Size = UDim2.fromOffset(200,28)
+        notif.Position = UDim2.fromOffset(30,120)
         notif.BackgroundColor3 = Color3.fromRGB(0,120,70)
         notif.TextColor3 = Color3.new(1,1,1)
         notif.Text = "Link copied to clipboard!"
         notif.TextSize = 14
         notif.Font = Enum.Font.GothamBold
-        notif.Parent = Content
-        Debris:AddItem(notif, 3)
+        notif.Parent = KeyContent
+        Debris:AddItem(notif,3)
     end
 end)
 
---// AUTO RESET TOGGLE
+--// CREATE MAIN FEATURES UI
+local MainFrame, MainContent = CreateDraggableFrame("Main Features", UDim2.fromOffset(260,160), UDim2.fromScale(0.65,0.35))
+
+-- Auto Reset toggle
 local Toggle = Instance.new("TextButton")
-Toggle.Size = UDim2.fromOffset(200, 36)
-Toggle.Position = UDim2.fromOffset(30, 140)
+Toggle.Size = UDim2.fromOffset(200,36)
+Toggle.Position = UDim2.fromOffset(30,20)
 Toggle.Text = "Auto Reset: OFF"
 Toggle.Font = Enum.Font.GothamBold
 Toggle.TextSize = 14
 Toggle.BackgroundColor3 = Color3.fromRGB(90,90,90) -- greyed until key
 Toggle.TextColor3 = Color3.new(1,1,1)
-Toggle.Parent = Content
+Toggle.Parent = MainContent
 Instance.new("UICorner", Toggle)
 
 Toggle.MouseButton1Click:Connect(function()
@@ -140,29 +144,43 @@ Toggle.MouseButton1Click:Connect(function()
     Toggle.BackgroundColor3 = AutoReset and Color3.fromRGB(0,120,70) or Color3.fromRGB(45,45,45)
 end)
 
---// KEY SUBMISSION WITH AUTO ACTIVATION
+--// HELPER FUNCTIONS
+local function CoinBagFull()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    if not stats then return false end
+    local coins = stats:FindFirstChild("Coins")
+    if not coins then return false end
+    return coins.Value >= COIN_BAG_MAX
+end
+
+local function IsMurderer()
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChild("Knife") ~= nil
+end
+
+--// KEY SUBMISSION LOGIC
 SubmitBtn.MouseButton1Click:Connect(function()
     if KeyInput.Text == KEY then
         UNLOCKED = true
         SubmitBtn.Text = "Key Accepted ✅"
         SubmitBtn.BackgroundColor3 = Color3.fromRGB(0,120,70)
 
-        -- Activate main features immediately
+        -- Activate main features
         AutoReset = true
         Toggle.Text = "Auto Reset: ON"
         Toggle.BackgroundColor3 = Color3.fromRGB(0,120,70)
 
         -- Notification
         local notif = Instance.new("TextLabel")
-        notif.Size = UDim2.fromOffset(200, 28)
-        notif.Position = UDim2.fromOffset(30, 180)
-        notif.BackgroundColor3 = Color3.fromRGB(0, 120, 70)
+        notif.Size = UDim2.fromOffset(200,28)
+        notif.Position = UDim2.fromOffset(30,120)
+        notif.BackgroundColor3 = Color3.fromRGB(0,120,70)
         notif.TextColor3 = Color3.new(1,1,1)
         notif.Text = "Key accepted! Features activated"
         notif.TextSize = 14
         notif.Font = Enum.Font.GothamBold
-        notif.Parent = Content
-        Debris:AddItem(notif, 3)
+        notif.Parent = KeyContent
+        Debris:AddItem(notif,3)
     else
         UNLOCKED = false
         SubmitBtn.Text = "Wrong Key ❌"
@@ -172,21 +190,6 @@ SubmitBtn.MouseButton1Click:Connect(function()
         Toggle.BackgroundColor3 = Color3.fromRGB(90,90,90)
     end
 end)
-
---// CHECK COIN BAG
-local function CoinBagFull()
-    local stats = LocalPlayer:FindFirstChild("leaderstats")
-    if not stats then return false end
-    local coins = stats:FindFirstChild("Coins")
-    if not coins then return false end
-    return coins.Value >= COIN_BAG_MAX
-end
-
---// CHECK MURDERER
-local function IsMurderer()
-    local char = LocalPlayer.Character
-    return char and char:FindFirstChild("Knife") ~= nil
-end
 
 --// MAIN LOOP
 task.spawn(function()
