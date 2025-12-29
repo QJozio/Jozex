@@ -1,101 +1,110 @@
---// SERVICES
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local Workspace = game:GetService("Workspace")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- CONFIG
-local AutoFarmEnabled = true
-local CoinsCollected = 0
-local CoinBagLimit = 40 -- max coins before reset
-local CoinCollectDelay = 0.05 -- delay between each coin collect
+-- Create Window
+local Window = Rayfield:CreateWindow({
+    Name = "Mobile Macro Hub",
+    LoadingTitle = "Mobile Macro",
+    LoadingSubtitle = "by You",
+    ConfigurationSaving = { Enabled = false }
+})
 
--- UI (Optional, simple)
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "MM2AutoFarmUI"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+-- Create Tab
+local MacroTab = Window:CreateTab("Macro", 4483362458)
 
-local Counter = Instance.new("TextLabel")
-Counter.Size = UDim2.new(0, 250, 0, 40)
-Counter.Position = UDim2.new(0.5, -125, 0, 20)
-Counter.BackgroundTransparency = 1
-Counter.TextColor3 = Color3.fromRGB(0, 255, 0)
-Counter.Font = Enum.Font.GothamBold
-Counter.TextSize = 24
-Counter.Text = "Coins Collected: 0"
-Counter.Parent = ScreenGui
+-- Section
+MacroTab:CreateSection("Macro Controls")
 
--- GET REMOTEEVENT FOR COINS
-local CollectCoinEvent
-for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-    if obj:IsA("RemoteEvent") and obj.Name:lower():find("collect") then
-        CollectCoinEvent = obj
-        break
-    end
-end
+-- Variables
+local MacroEnabled = false
+local ActionDelay = 0.1 -- delay between actions
+local ExampleButton = workspace:FindFirstChild("ClickButton") -- replace with your object
+local RecordedActions = {}
+local SelectedFileName = "DefaultMacro"
 
--- HELPER FUNCTIONS
-local function GetBagAmount()
-    local stats = LocalPlayer:FindFirstChild("leaderstats")
-    if stats and stats:FindFirstChild("Coins") then
-        return stats.Coins.Value
-    end
-    return 0
-end
-
-local function GetCoins()
-    local CoinsFolder = Workspace:FindFirstChild("Coins") or Workspace
-    local coins = {}
-    for _, coin in pairs(CoinsFolder:GetChildren()) do
-        if coin:IsA("BasePart") then
-            table.insert(coins, coin)
+-- Toggle to start/stop macro
+MacroTab:CreateToggle({
+    Name = "Enable Macro",
+    CurrentValue = false,
+    Flag = "MacroToggle",
+    Callback = function(Value)
+        MacroEnabled = Value
+        if MacroEnabled then
+            Rayfield:Notify({Title="Macro", Content="Macro started!", Duration=2})
+        else
+            Rayfield:Notify({Title="Macro", Content="Macro stopped!", Duration=2})
         end
     end
-    return coins
-end
+})
 
-local function TeleportToCoin(coin)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if hrp and coin then
-        hrp.CFrame = CFrame.new(coin.Position + Vector3.new(0,3,0)) -- teleport slightly above
+-- Slider to control speed
+MacroTab:CreateSlider({
+    Name = "Action Speed (sec)",
+    Range = {0.05, 2},
+    Increment = 0.05,
+    Suffix = "s",
+    CurrentValue = 0.1,
+    Flag = "MacroSpeed",
+    Callback = function(Value)
+        ActionDelay = Value
     end
-end
+})
 
--- AUTO FARM LOOP
+-- TextBox to change selected file name
+MacroTab:CreateTextBox({
+    Name = "Macro File Name",
+    PlaceholderText = "Enter file name",
+    Text = SelectedFileName,
+    Callback = function(Value)
+        SelectedFileName = Value
+        Rayfield:Notify({Title="Macro", Content="Selected file: "..SelectedFileName, Duration=2})
+    end
+})
+
+-- Button to save recorded actions
+MacroTab:CreateButton({
+    Name = "Save Recorded Actions",
+    Callback = function()
+        local HttpService = game:GetService("HttpService")
+        local json = HttpService:JSONEncode(RecordedActions)
+        writefile(SelectedFileName..".json", json)
+        Rayfield:Notify({Title="Macro", Content="Saved to "..SelectedFileName..".json", Duration=3})
+    end
+})
+
+-- Button to record the current action once
+MacroTab:CreateButton({
+    Name = "Record Action",
+    Callback = function()
+        if ExampleButton and ExampleButton:IsA("BasePart") then
+            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                table.insert(RecordedActions, {Position = ExampleButton.Position})
+                Rayfield:Notify({Title="Macro", Content="Action recorded!", Duration=2})
+            end
+        end
+    end
+})
+
+-- Macro loop
 task.spawn(function()
-    while AutoFarmEnabled do
-        -- Auto-reset if bag full
-        if GetBagAmount() >= CoinBagLimit then
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChildOfClass("Humanoid") then
-                char:FindFirstChildOfClass("Humanoid").Health = 0
-                task.wait(2) -- wait for respawn
+    while true do
+        if MacroEnabled then
+            for _, action in ipairs(RecordedActions) do
+                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    -- Teleport to recorded position
+                    hrp.CFrame = CFrame.new(action.Position + Vector3.new(0,3,0))
+                    -- Fire touch to simulate click
+                    if ExampleButton then
+                        firetouchinterest(hrp, ExampleButton, 0)
+                        firetouchinterest(hrp, ExampleButton, 1)
+                    end
+                end
+                task.wait(ActionDelay)
             end
         else
-            local coins = GetCoins()
-            for _, coin in ipairs(coins) do
-                if coin and LocalPlayer.Character then
-                    -- TELEPORT to coin
-                    TeleportToCoin(coin)
-
-                    -- Fire RemoteEvent to collect
-                    if CollectCoinEvent then
-                        CollectCoinEvent:FireServer(coin)
-                    else
-                        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if hrp then
-                            firetouchinterest(hrp, coin, 0)
-                            firetouchinterest(hrp, coin, 1)
-                        end
-                    end
-
-                    CoinsCollected += 1
-                    Counter.Text = "Coins Collected: "..CoinsCollected
-                    task.wait(CoinCollectDelay)
-                end
-            end
+            task.wait(0.1)
         end
-        task.wait(0.2)
     end
 end)
