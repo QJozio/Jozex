@@ -7,45 +7,26 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- CONFIG
 local AutoFarmEnabled = true
 local CoinsCollected = 0
-local CoinBagLimit = 40 -- max coins before auto-reset
+local CoinBagLimit = 40 -- max coins before reset
+local CoinCollectDelay = 0.05 -- delay between each coin collect
 
--- UI SETUP
+-- UI (Optional, simple)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JozexHubAutoFarmUI"
+ScreenGui.Name = "MM2AutoFarmUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Full-screen darker background
-local Background = Instance.new("Frame")
-Background.Size = UDim2.new(1,0,1,0) -- full screen
-Background.Position = UDim2.new(0,0,0,0)
-Background.BackgroundColor3 = Color3.fromRGB(0,0,0) -- black
-Background.BackgroundTransparency = 0.2 -- darker but slightly transparent
-Background.Parent = ScreenGui
-
--- Title
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0,400,0,50)
-Title.Position = UDim2.new(0.5, -200, 0.5, -25)
-Title.BackgroundTransparency = 1
-Title.Text = "Jozex Hub MM2 AutoFarm"
-Title.TextColor3 = Color3.fromRGB(0,255,0)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 30
-Title.Parent = Background
-
--- Bottom counter
 local Counter = Instance.new("TextLabel")
-Counter.Size = UDim2.new(0,300,0,40)
-Counter.Position = UDim2.new(0.5, -150, 1, -50)
+Counter.Size = UDim2.new(0, 250, 0, 40)
+Counter.Position = UDim2.new(0.5, -125, 0, 20)
 Counter.BackgroundTransparency = 1
-Counter.TextColor3 = Color3.fromRGB(255,255,255)
+Counter.TextColor3 = Color3.fromRGB(0, 255, 0)
 Counter.Font = Enum.Font.GothamBold
 Counter.TextSize = 24
 Counter.Text = "Coins Collected: 0"
-Counter.Parent = Background
+Counter.Parent = ScreenGui
 
--- GET REMOTEEVENT
+-- GET REMOTEEVENT FOR COINS
 local CollectCoinEvent
 for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
     if obj:IsA("RemoteEvent") and obj.Name:lower():find("collect") then
@@ -54,7 +35,7 @@ for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
     end
 end
 
--- HELPER FUNCTION
+-- HELPER FUNCTIONS
 local function GetBagAmount()
     local stats = LocalPlayer:FindFirstChild("leaderstats")
     if stats and stats:FindFirstChild("Coins") then
@@ -74,6 +55,13 @@ local function GetCoins()
     return coins
 end
 
+local function TeleportToCoin(coin)
+    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if hrp and coin then
+        hrp.CFrame = CFrame.new(coin.Position + Vector3.new(0,3,0)) -- teleport slightly above
+    end
+end
+
 -- AUTO FARM LOOP
 task.spawn(function()
     while AutoFarmEnabled do
@@ -88,16 +76,14 @@ task.spawn(function()
             local coins = GetCoins()
             for _, coin in ipairs(coins) do
                 if coin and LocalPlayer.Character then
-                    -- TELEPORT TO COIN
-                    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp then
-                        hrp.CFrame = CFrame.new(coin.Position + Vector3.new(0,3,0)) -- slightly above coin
-                    end
+                    -- TELEPORT to coin
+                    TeleportToCoin(coin)
 
                     -- Fire RemoteEvent to collect
                     if CollectCoinEvent then
                         CollectCoinEvent:FireServer(coin)
                     else
+                        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                         if hrp then
                             firetouchinterest(hrp, coin, 0)
                             firetouchinterest(hrp, coin, 1)
@@ -106,10 +92,10 @@ task.spawn(function()
 
                     CoinsCollected += 1
                     Counter.Text = "Coins Collected: "..CoinsCollected
-                    task.wait(0.1)
+                    task.wait(CoinCollectDelay)
                 end
             end
         end
-        task.wait(0.5)
+        task.wait(0.2)
     end
 end)
