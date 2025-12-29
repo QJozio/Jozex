@@ -2,13 +2,12 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- CONFIG
 local AutoFarmEnabled = true
-local StepSpeed = 16 -- humanoid walk speed per step
+local TweenSpeed = 50 -- studs per second
 local CoinsCollected = 0
 local CoinBagLimit = 40 -- max coins before reset
 
@@ -22,8 +21,8 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 local Background = Instance.new("Frame")
 Background.Size = UDim2.new(1,0,1,0)
 Background.Position = UDim2.new(0,0,0,0)
-Background.BackgroundColor3 = Color3.fromRGB(0,0,0) -- black
-Background.BackgroundTransparency = 0.4 -- slightly transparent
+Background.BackgroundColor3 = Color3.fromRGB(0,0,0)
+Background.BackgroundTransparency = 0.4
 Background.Parent = ScreenGui
 
 -- Title
@@ -78,19 +77,19 @@ local function GetBagAmount()
     return 0
 end
 
--- Safe step-by-step movement to prevent flying
-local function MoveToSafe(targetPos)
+-- Safe tween to coin
+local function TweenToCoin(coinPos)
     local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-    if not hrp or not hum then return end
+    if not hrp then return end
 
-    hum.WalkSpeed = StepSpeed
-    while (hrp.Position - targetPos).Magnitude > 2 and AutoFarmEnabled do
-        local direction = (targetPos - hrp.Position).Unit
-        local nextPos = hrp.Position + direction * 2
-        hrp.CFrame = CFrame.new(Vector3.new(nextPos.X, hrp.Position.Y, nextPos.Z))
-        task.wait(0.05)
-    end
+    local targetPos = coinPos + Vector3.new(0,3,0) -- slightly above coin
+    local distance = (targetPos - hrp.Position).Magnitude
+    local tweenTime = distance / TweenSpeed
+
+    local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
+    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
+    tween:Play()
+    tween.Completed:Wait()
 end
 
 -- AUTO FARM LOOP
@@ -107,7 +106,7 @@ task.spawn(function()
             local coins = GetCoins()
             for _, coin in ipairs(coins) do
                 if coin and LocalPlayer.Character then
-                    MoveToSafe(coin.Position)
+                    TweenToCoin(coin.Position)
 
                     -- Collect coin via RemoteEvent
                     if CollectCoinEvent then
