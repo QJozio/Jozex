@@ -1,110 +1,130 @@
--- [[ JOZEX AIMBOT - CUSTOM UI EDITION 2025 ]] --
-
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
+-- [[ JOZEX AFK FIELD FARMER ]] --
 local Players = game:GetService("Players")
+local VirtualUser = game:GetService("VirtualUser")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
-local Camera = workspace.CurrentCamera
 
--- [[ UI SETTINGS ]] --
-local JozexUI = Instance.new("ScreenGui", game:GetService("CoreGui"))
-local MainFrame = Instance.new("Frame", JozexUI)
-local Title = Instance.new("TextLabel", MainFrame)
-local Container = Instance.new("Frame", MainFrame)
+-- State
+local Farming = false
+local StartPosition = nil
 
--- [[ AIMBOT SETTINGS ]] --
-local Settings = {
-    Enabled = false,
-    FOV = 150,
-    Smoothing = 0.5,
-    AimPart = "Head",
-    TeamCheck = true
-}
+-- [[ UI SETUP ]] --
+local ScreenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+local Main = Instance.new("Frame", ScreenGui)
+Main.Size = UDim2.new(0, 200, 0, 70)
+Main.Position = UDim2.new(0.5, -100, 0.8, -50) -- Bottom Center
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Main.BorderSizePixel = 0
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
--- [[ UI DESIGN ]] --
-MainFrame.Size = UDim2.new(0, 350, 0, 250)
-MainFrame.Position = UDim2.new(0.5, -175, 0.5, -125)
-MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-MainFrame.BorderSizePixel = 0
-Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+-- Draggable Logic
+local dragging, dragInput, dragStart, startPos
+Main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true; dragStart = input.Position; startPos = Main.Position
+        input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
+    end
+end)
+Main.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
 
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Text = "  JOZEX AIMBOT | BETA"
-Title.TextColor3 = Color3.new(1, 1, 1)
-Title.Font = Enum.Font.GothamBold
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.BackgroundTransparency = 1
+-- Rainbow Border
+local RGB = Instance.new("Frame", Main)
+RGB.Size = UDim2.new(1, -6, 1, -6)
+RGB.Position = UDim2.new(0, 3, 0, 3)
+RGB.BackgroundColor3 = Color3.new(1, 1, 1)
+Instance.new("UICorner", RGB).CornerRadius = UDim.new(0, 8)
 
-Container.Size = UDim2.new(1, -20, 1, -60)
-Container.Position = UDim2.new(0, 10, 0, 50)
-Container.BackgroundTransparency = 1
-local Layout = Instance.new("UIListLayout", Container)
-Layout.Padding = UDim.new(0, 8)
+local Button = Instance.new("TextButton", RGB)
+Button.Size = UDim2.new(1, -4, 1, -4)
+Button.Position = UDim2.new(0, 2, 0, 2)
+Button.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+Button.Text = "AUTO FARM: OFF"
+Button.TextColor3 = Color3.fromRGB(255, 100, 100) -- Red
+Button.Font = Enum.Font.GothamBold
+Button.TextSize = 14
+Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
 
--- Function to create Bento-style buttons
-local function CreateToggle(text, callback)
-    local btn = Instance.new("TextButton", Container)
-    btn.Size = UDim2.new(1, 0, 0, 40)
-    btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    btn.Text = text .. ": OFF"
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.Gotham
-    Instance.new("UICorner", btn)
-    
-    local active = false
-    btn.MouseButton1Click:Connect(function()
-        active = not active
-        btn.Text = text .. (active and ": ON" or ": OFF")
-        btn.BackgroundColor3 = active and Color3.fromRGB(0, 120, 255) or Color3.fromRGB(25, 25, 25)
-        callback(active)
-    end)
-end
+-- [[ FARMING LOGIC ]] --
 
--- [[ THE AIMBOT LOGIC ]] --
-local FOVCircle = Drawing.new("Circle")
-FOVCircle.Thickness = 1
-FOVCircle.Color = Color3.new(1, 1, 1)
+-- 1. Anti-AFK (Prevents Disconnect)
+LocalPlayer.Idled:Connect(function()
+    VirtualUser:CaptureController()
+    VirtualUser:ClickButton2(Vector2.new())
+end)
 
-local function GetClosestPlayer()
-    local target = nil
-    local dist = Settings.FOV
-    for _, v in pairs(Players:GetPlayers()) do
-        if v ~= LocalPlayer and v.Character and v.Character:FindFirstChild(Settings.AimPart) then
-            if Settings.TeamCheck and v.Team == LocalPlayer.Team then continue end
-            local pos, onScreen = Camera:WorldToViewportPoint(v.Character[Settings.AimPart].Position)
-            if onScreen then
-                local mag = (Vector2.new(pos.X, pos.Y) - UserInputService:GetMouseLocation()).Magnitude
-                if mag < dist then
-                    target = v
-                    dist = mag
-                end
+-- 2. Tool Activation
+task.spawn(function()
+    while true do
+        if Farming and LocalPlayer.Character then
+            -- Find Tool
+            local Tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+            if Tool then
+                Tool:Activate()
             end
         end
+        task.wait(0.1) -- Fast swing
     end
-    return target
-end
+end)
 
-RunService.RenderStepped:Connect(function()
-    FOVCircle.Position = UserInputService:GetMouseLocation()
-    FOVCircle.Radius = Settings.FOV
-    FOVCircle.Visible = Settings.Enabled
+-- 3. Movement Pattern
+task.spawn(function()
+    while true do
+        if Farming and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            -- If we just started, save the center position
+            if not StartPosition then
+                StartPosition = LocalPlayer.Character.HumanoidRootPart.Position
+            end
+            
+            -- Move to a random spot within 15 studs of the start position
+            local RandomX = math.random(-15, 15)
+            local RandomZ = math.random(-15, 15)
+            local TargetPos = StartPosition + Vector3.new(RandomX, 0, RandomZ)
+            
+            LocalPlayer.Character.Humanoid:MoveTo(TargetPos)
+            
+            -- Wait until we reach the point or 2 seconds pass
+            local MoveTime = 0
+            while Farming and (LocalPlayer.Character.HumanoidRootPart.Position - TargetPos).Magnitude > 2 and MoveTime < 2 do
+                MoveTime = MoveTime + 0.1
+                task.wait(0.1)
+            end
+        else
+            StartPosition = nil -- Reset position if stopped
+        end
+        task.wait()
+    end
+end)
+
+-- [[ CONTROLS ]] --
+Button.MouseButton1Click:Connect(function()
+    Farming = not Farming
     
-    if Settings.Enabled and UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        local target = GetClosestPlayer()
-        if target then
-            local aimPos = target.Character[Settings.AimPart].Position
-            Camera.CFrame = Camera.CFrame:Lerp(CFrame.new(Camera.CFrame.Position, aimPos), Settings.Smoothing)
+    if Farming then
+        Button.Text = "AUTO FARM: ON"
+        Button.TextColor3 = Color3.fromRGB(100, 255, 100) -- Green
+        
+        -- Set anchor point to current location
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            StartPosition = LocalPlayer.Character.HumanoidRootPart.Position
+        end
+    else
+        Button.Text = "AUTO FARM: OFF"
+        Button.TextColor3 = Color3.fromRGB(255, 100, 100) -- Red
+        
+        -- Stop moving immediately
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+            LocalPlayer.Character.Humanoid:MoveTo(LocalPlayer.Character.HumanoidRootPart.Position)
         end
     end
 end)
 
--- [[ ADD UI ELEMENTS ]] --
-CreateToggle("Master Switch", function(s) Settings.Enabled = s end)
-CreateToggle("Team Check", function(s) Settings.TeamCheck = s end)
-
--- Keybind to hide/show menu (Insert Key)
-UserInputService.InputBegan:Connect(function(input)
-    if input.KeyCode == Enum.KeyCode.Insert then
-        MainFrame.Visible = not MainFrame.Visible
-    end
+-- RGB Loop
+task.spawn(function()
+    local h = 0
+    while task.wait() do h = h + 0.005; RGB.BackgroundColor3 = Color3.fromHSV(h, 1, 1) end
 end)
