@@ -2,14 +2,12 @@
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- CONFIG
 local AutoFarmEnabled = true
-local TweenSpeed = 50 -- studs per second
 local CoinsCollected = 0
-local CoinBagLimit = 40 -- max coins before reset
+local CoinBagLimit = 40 -- max coins before auto-reset
 
 -- UI SETUP
 local ScreenGui = Instance.new("ScreenGui")
@@ -17,12 +15,12 @@ ScreenGui.Name = "JozexHubAutoFarmUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- Darker, slightly transparent background
+-- Full-screen darker background
 local Background = Instance.new("Frame")
-Background.Size = UDim2.new(1,0,1,0)
+Background.Size = UDim2.new(1,0,1,0) -- full screen
 Background.Position = UDim2.new(0,0,0,0)
-Background.BackgroundColor3 = Color3.fromRGB(0,0,0)
-Background.BackgroundTransparency = 0.4
+Background.BackgroundColor3 = Color3.fromRGB(0,0,0) -- black
+Background.BackgroundTransparency = 0.2 -- darker but slightly transparent
 Background.Parent = ScreenGui
 
 -- Title
@@ -47,16 +45,23 @@ Counter.TextSize = 24
 Counter.Text = "Coins Collected: 0"
 Counter.Parent = Background
 
--- HELPER FUNCTIONS
-local function GetCollectCoinEvent()
-    for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
-        if obj:IsA("RemoteEvent") and obj.Name:lower():find("collect") then
-            return obj
-        end
+-- GET REMOTEEVENT
+local CollectCoinEvent
+for _, obj in pairs(ReplicatedStorage:GetDescendants()) do
+    if obj:IsA("RemoteEvent") and obj.Name:lower():find("collect") then
+        CollectCoinEvent = obj
+        break
     end
 end
 
-local CollectCoinEvent = GetCollectCoinEvent()
+-- HELPER FUNCTION
+local function GetBagAmount()
+    local stats = LocalPlayer:FindFirstChild("leaderstats")
+    if stats and stats:FindFirstChild("Coins") then
+        return stats.Coins.Value
+    end
+    return 0
+end
 
 local function GetCoins()
     local CoinsFolder = Workspace:FindFirstChild("Coins") or Workspace
@@ -67,29 +72,6 @@ local function GetCoins()
         end
     end
     return coins
-end
-
-local function GetBagAmount()
-    local stats = LocalPlayer:FindFirstChild("leaderstats")
-    if stats and stats:FindFirstChild("Coins") then
-        return stats.Coins.Value
-    end
-    return 0
-end
-
--- Safe tween to coin
-local function TweenToCoin(coinPos)
-    local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if not hrp then return end
-
-    local targetPos = coinPos + Vector3.new(0,3,0) -- slightly above coin
-    local distance = (targetPos - hrp.Position).Magnitude
-    local tweenTime = distance / TweenSpeed
-
-    local tweenInfo = TweenInfo.new(tweenTime, Enum.EasingStyle.Linear)
-    local tween = TweenService:Create(hrp, tweenInfo, {CFrame = CFrame.new(targetPos)})
-    tween:Play()
-    tween.Completed:Wait()
 end
 
 -- AUTO FARM LOOP
@@ -106,15 +88,19 @@ task.spawn(function()
             local coins = GetCoins()
             for _, coin in ipairs(coins) do
                 if coin and LocalPlayer.Character then
-                    TweenToCoin(coin.Position)
+                    -- TELEPORT TO COIN
+                    local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    if hrp then
+                        hrp.CFrame = CFrame.new(coin.Position + Vector3.new(0,3,0)) -- slightly above coin
+                    end
 
-                    -- Collect coin via RemoteEvent
+                    -- Fire RemoteEvent to collect
                     if CollectCoinEvent then
                         CollectCoinEvent:FireServer(coin)
                     else
-                        if LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, coin, 0)
-                            firetouchinterest(LocalPlayer.Character.HumanoidRootPart, coin, 1)
+                        if hrp then
+                            firetouchinterest(hrp, coin, 0)
+                            firetouchinterest(hrp, coin, 1)
                         end
                     end
 
