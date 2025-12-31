@@ -1,7 +1,5 @@
--- Jozex Hive Hub Auto Farm v6.0 - Full Pack (Self-contained)
+-- Jozex Hive Hub Auto Farm v7.0 - Full Pack w/ Rayfield
 -- Bee Swarm Simulator
--- Rayfield UI
--- Auto teleport, auto claim hive, pathfinder, auto collect, auto convert, Info tab
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -11,23 +9,27 @@ local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
 getgenv().AutoFarm = false
 getgenv().ConvertPercent = 95
-local HIVEHUB_PLACEID = 15579077077  -- Hive Hub place ID
+local HIVEHUB_PLACEID = 15579077077 -- Hive Hub Place ID
 
--- =======================
--- TELEPORT TO HIVE HUB IF NOT PRESENT
--- =======================
+-- Wait until Rayfield loads
+local success, Rayfield = pcall(function()
+    return loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+end)
+if not success then
+    warn("Rayfield failed to load. Make sure your executor supports loadstring and HTTP requests.")
+    return
+end
+
+-- Teleport to Hive Hub if not present
 if not workspace:FindFirstChild("Hub Field") then
     TeleportService:Teleport(HIVEHUB_PLACEID, player)
     return
 end
 
--- =======================
--- HELPER FUNCTIONS
--- =======================
+-- Helper functions
 local function getChar() return player.Character or player.CharacterAdded:Wait() end
 local function getHRP() return getChar():WaitForChild("HumanoidRootPart") end
 local function getHumanoid() return getChar():WaitForChild("Humanoid") end
-
 local function backpackPercent()
     local stats = player:FindFirstChild("CoreStats")
     if not stats then return 0 end
@@ -80,7 +82,6 @@ end
 -- =======================
 -- RAYFIELD UI
 -- =======================
-local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 local Window = Rayfield:CreateWindow({
     Name = "Jozex | Hive Hub Auto Farm",
     LoadingTitle = "Jozex",
@@ -113,7 +114,7 @@ Rayfield:Notify({Title="Jozex Hive Hub", Content="Auto Farm Full Pack Loaded üê
 -- =======================
 task.spawn(function()
     while task.wait(0.3) do
-        claimHive() -- auto claim if unclaimed
+        claimHive()
         if getgenv().AutoFarm then
             local hrp = getHRP()
             local hubField = workspace:FindFirstChild("Hub Field")
