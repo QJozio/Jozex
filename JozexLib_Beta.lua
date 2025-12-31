@@ -1,110 +1,116 @@
--- Load Rayfield
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+-- HiveHub Auto Farm (Rayfield Edition)
+-- Bee Swarm Simulator
 
--- Create Window
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet(
+    "https://sirius.menu/rayfield"))()
+
+-- Window
 local Window = Rayfield:CreateWindow({
-    Name = "Mobile Macro Hub",
-    LoadingTitle = "Mobile Macro",
-    LoadingSubtitle = "by You",
-    ConfigurationSaving = { Enabled = false }
+    Name = "HiveHub | Bee Swarm Simulator",
+    LoadingTitle = "HiveHub",
+    LoadingSubtitle = "Rayfield UI",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "HiveHub",
+        FileName = "AutoFarm"
+    }
 })
 
--- Create Tab
-local MacroTab = Window:CreateTab("Macro", 4483362458)
-
--- Section
-MacroTab:CreateSection("Macro Controls")
+-- Services
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
 
 -- Variables
-local MacroEnabled = false
-local ActionDelay = 0.1 -- delay between actions
-local ExampleButton = workspace:FindFirstChild("ClickButton") -- replace with your object
-local RecordedActions = {}
-local SelectedFileName = "DefaultMacro"
+getgenv().AutoFarm = false
+getgenv().Field = "Sunflower Field"
+getgenv().ConvertAt = 95
 
--- Toggle to start/stop macro
-MacroTab:CreateToggle({
-    Name = "Enable Macro",
+-- Get Field Position
+local function getField()
+    for _,v in pairs(workspace.FlowerZones:GetChildren()) do
+        if v.Name == getgenv().Field then
+            return v.Position
+        end
+    end
+end
+
+-- Backpack %
+local function backpackPercent()
+    local stats = player.CoreStats
+    return (stats.Pollen.Value / stats.Capacity.Value) * 100
+end
+
+------------------------------------------------
+-- UI TAB
+------------------------------------------------
+local FarmTab = Window:CreateTab("🌼 Farming", 4483362458)
+
+-- Toggle Auto Farm
+FarmTab:CreateToggle({
+    Name = "Auto Farm",
     CurrentValue = false,
-    Flag = "MacroToggle",
     Callback = function(Value)
-        MacroEnabled = Value
-        if MacroEnabled then
-            Rayfield:Notify({Title="Macro", Content="Macro started!", Duration=2})
-        else
-            Rayfield:Notify({Title="Macro", Content="Macro stopped!", Duration=2})
-        end
+        getgenv().AutoFarm = Value
     end
 })
 
--- Slider to control speed
-MacroTab:CreateSlider({
-    Name = "Action Speed (sec)",
-    Range = {0.05, 2},
-    Increment = 0.05,
-    Suffix = "s",
-    CurrentValue = 0.1,
-    Flag = "MacroSpeed",
+-- Field Dropdown
+FarmTab:CreateDropdown({
+    Name = "Select Field",
+    Options = {
+        "Sunflower Field",
+        "Blue Flower Field",
+        "Clover Field",
+        "Strawberry Field",
+        "Pine Tree Forest",
+        "Bamboo Field",
+        "Spider Field",
+        "Stump Field"
+    },
+    CurrentOption = "Sunflower Field",
     Callback = function(Value)
-        ActionDelay = Value
+        getgenv().Field = Value
     end
 })
 
--- TextBox to change selected file name
-MacroTab:CreateTextBox({
-    Name = "Macro File Name",
-    PlaceholderText = "Enter file name",
-    Text = SelectedFileName,
+-- Convert %
+FarmTab:CreateSlider({
+    Name = "Convert At (%)",
+    Range = {50, 100},
+    Increment = 5,
+    CurrentValue = 95,
     Callback = function(Value)
-        SelectedFileName = Value
-        Rayfield:Notify({Title="Macro", Content="Selected file: "..SelectedFileName, Duration=2})
+        getgenv().ConvertAt = Value
     end
 })
 
--- Button to save recorded actions
-MacroTab:CreateButton({
-    Name = "Save Recorded Actions",
-    Callback = function()
-        local HttpService = game:GetService("HttpService")
-        local json = HttpService:JSONEncode(RecordedActions)
-        writefile(SelectedFileName..".json", json)
-        Rayfield:Notify({Title="Macro", Content="Saved to "..SelectedFileName..".json", Duration=3})
-    end
-})
-
--- Button to record the current action once
-MacroTab:CreateButton({
-    Name = "Record Action",
-    Callback = function()
-        if ExampleButton and ExampleButton:IsA("BasePart") then
-            local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                table.insert(RecordedActions, {Position = ExampleButton.Position})
-                Rayfield:Notify({Title="Macro", Content="Action recorded!", Duration=2})
-            end
-        end
-    end
-})
-
--- Macro loop
+------------------------------------------------
+-- FARM LOOP
+------------------------------------------------
 task.spawn(function()
     while true do
-        if MacroEnabled then
-            for _, action in ipairs(RecordedActions) do
-                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    -- Teleport to recorded position
-                    hrp.CFrame = CFrame.new(action.Position + Vector3.new(0,3,0))
-                    -- Fire touch to simulate click
-                    if ExampleButton then
-                        firetouchinterest(hrp, ExampleButton, 0)
-                        firetouchinterest(hrp, ExampleButton, 1)
-                    end
-                end
-                task.wait(ActionDelay)
+        if getgenv().AutoFarm then
+            local pos = getField()
+            if pos then
+                hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
             end
-        else
-            task.wait(0.1)
         end
+        task.wait(0.25)
+    end
+end)
+
+------------------------------------------------
+-- CONVERT LOOP
+------------------------------------------------
+task.spawn(function()
+    while true do
+        if getgenv().AutoFarm and backpackPercent() >= getgenv().ConvertAt then
+            hrp.CFrame = player.SpawnPos.Value
+            task.wait(8)
+        end
+        task.wait(1)
     end
 end)
