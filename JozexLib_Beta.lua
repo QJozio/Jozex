@@ -1,63 +1,83 @@
--- HiveHub Auto Farm (Rayfield Edition)
+-- Jozex Auto Farm v1.3 (Final Refined)
 -- Bee Swarm Simulator
+-- Rayfield UI
 
--- Load Rayfield
-local Rayfield = loadstring(game:HttpGet(
-    "https://sirius.menu/rayfield"))()
+-- =======================
+-- LOAD RAYFIELD
+-- =======================
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- Window
 local Window = Rayfield:CreateWindow({
-    Name = "HiveHub | Bee Swarm Simulator",
-    LoadingTitle = "HiveHub",
-    LoadingSubtitle = "Rayfield UI",
+    Name = "Jozex | Bee Swarm Simulator",
+    LoadingTitle = "Jozex",
+    LoadingSubtitle = "Final Refined Auto Farm",
     ConfigurationSaving = {
         Enabled = true,
-        FolderName = "HiveHub",
-        FileName = "AutoFarm"
+        FolderName = "Jozex",
+        FileName = "Settings"
     }
 })
 
--- Services
+-- =======================
+-- SERVICES & PLAYER
+-- =======================
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local player = Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
-local hrp = char:WaitForChild("HumanoidRootPart")
 
--- Variables
-getgenv().AutoFarm = false
-getgenv().Field = "Sunflower Field"
-getgenv().ConvertAt = 95
-
--- Get Field Position
-local function getField()
-    for _,v in pairs(workspace.FlowerZones:GetChildren()) do
-        if v.Name == getgenv().Field then
-            return v.Position
-        end
-    end
+local function getChar()
+    return player.Character or player.CharacterAdded:Wait()
 end
 
--- Backpack %
+local function getHRP()
+    local char = getChar()
+    return char:WaitForChild("HumanoidRootPart")
+end
+
+-- =======================
+-- GLOBAL VARIABLES
+-- =======================
+getgenv().AutoFarm = false
+getgenv().SelectedField = "Sunflower Field"
+getgenv().ConvertPercent = 95
+
+-- =======================
+-- HELPER FUNCTIONS
+-- =======================
+local function getFieldCFrame()
+    for _, field in pairs(workspace.FlowerZones:GetChildren()) do
+        if field.Name == getgenv().SelectedField then
+            return field.CFrame
+        end
+    end
+    return nil
+end
+
 local function backpackPercent()
-    local stats = player.CoreStats
+    local stats = player:FindFirstChild("CoreStats")
+    if not stats then return 0 end
     return (stats.Pollen.Value / stats.Capacity.Value) * 100
 end
 
-------------------------------------------------
--- UI TAB
-------------------------------------------------
-local FarmTab = Window:CreateTab("🌼 Farming", 4483362458)
+local function goToHive()
+    if player:FindFirstChild("SpawnPos") then
+        getHRP().CFrame = player.SpawnPos.Value + Vector3.new(0,3,0)
+    end
+end
 
--- Toggle Auto Farm
+-- =======================
+-- UI SETUP
+-- =======================
+local FarmTab = Window:CreateTab("🌼 Auto Farm", 4483362458)
+
 FarmTab:CreateToggle({
-    Name = "Auto Farm",
+    Name = "Enable Auto Farm",
     CurrentValue = false,
-    Callback = function(Value)
-        getgenv().AutoFarm = Value
+    Callback = function(v)
+        getgenv().AutoFarm = v
     end
 })
 
--- Field Dropdown
 FarmTab:CreateDropdown({
     Name = "Select Field",
     Options = {
@@ -65,52 +85,64 @@ FarmTab:CreateDropdown({
         "Blue Flower Field",
         "Clover Field",
         "Strawberry Field",
-        "Pine Tree Forest",
         "Bamboo Field",
-        "Spider Field",
-        "Stump Field"
+        "Pine Tree Forest",
+        "Spider Field"
     },
     CurrentOption = "Sunflower Field",
-    Callback = function(Value)
-        getgenv().Field = Value
+    Callback = function(v)
+        getgenv().SelectedField = v
     end
 })
 
--- Convert %
 FarmTab:CreateSlider({
     Name = "Convert At (%)",
-    Range = {50, 100},
+    Range = {60, 100},
     Increment = 5,
     CurrentValue = 95,
-    Callback = function(Value)
-        getgenv().ConvertAt = Value
+    Callback = function(v)
+        getgenv().ConvertPercent = v
     end
 })
 
-------------------------------------------------
--- FARM LOOP
-------------------------------------------------
+-- =======================
+-- AUTO FARM LOOP
+-- =======================
 task.spawn(function()
-    while true do
+    while task.wait(0.2) do
         if getgenv().AutoFarm then
-            local pos = getField()
-            if pos then
-                hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+            local cf = getFieldCFrame()
+            if cf then
+                local hrp = getHRP()
+                -- Smooth, random offset to avoid detection / stuck
+                local offset = Vector3.new(
+                    math.random(-5,5),
+                    3,
+                    math.random(-5,5)
+                )
+                hrp.CFrame = CFrame.new(cf.Position + offset)
             end
         end
-        task.wait(0.25)
     end
 end)
 
-------------------------------------------------
--- CONVERT LOOP
-------------------------------------------------
+-- =======================
+-- AUTO CONVERT LOOP
+-- =======================
 task.spawn(function()
-    while true do
-        if getgenv().AutoFarm and backpackPercent() >= getgenv().ConvertAt then
-            hrp.CFrame = player.SpawnPos.Value
-            task.wait(8)
+    while task.wait(1) do
+        if getgenv().AutoFarm and backpackPercent() >= getgenv().ConvertPercent then
+            goToHive()
+            task.wait(7)
         end
-        task.wait(1)
     end
 end)
+
+-- =======================
+-- NOTIFICATION
+-- =======================
+Rayfield:Notify({
+    Title = "Jozex Loaded",
+    Content = "Final Refined Auto Farm Ready 🐝",
+    Duration = 4
+})
