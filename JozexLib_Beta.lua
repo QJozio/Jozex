@@ -1,41 +1,24 @@
--- Jozex Hive Hub Auto Farm v5.0 - Full Pack
+-- Jozex Hive Hub Auto Farm v6.0 - Full Pack (Self-contained)
 -- Bee Swarm Simulator
 -- Rayfield UI
--- Auto teleport, auto execute, pathfinder, auto collect, auto convert, auto claim hive, Info tab
+-- Auto teleport, auto claim hive, pathfinder, auto collect, auto convert, Info tab
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PathfindingService = game:GetService("PathfindingService")
 local TeleportService = game:GetService("TeleportService")
-local VirtualUser = game:GetService("VirtualUser")
 
 local player = Players.LocalPlayer
-
--- =======================
--- CONFIG
--- =======================
 getgenv().AutoFarm = false
 getgenv().ConvertPercent = 95
 local HIVEHUB_PLACEID = 15579077077  -- Hive Hub place ID
 
 -- =======================
--- AUTO EXECUTE ON TELEPORT
--- =======================
-local SCRIPT_URL = "https://raw.githubusercontent.com/YourRepo/JozexHiveHub/main/full_script.lua"
-if syn and syn.queue_on_teleport then
-    syn.queue_on_teleport('loadstring(game:HttpGet("'..SCRIPT_URL..'"))()')
-elseif queue_on_teleport then
-    queue_on_teleport('loadstring(game:HttpGet("'..SCRIPT_URL..'"))()')
-end
-
--- =======================
 -- TELEPORT TO HIVE HUB IF NOT PRESENT
 -- =======================
 if not workspace:FindFirstChild("Hub Field") then
-    if TeleportService then
-        TeleportService:Teleport(HIVEHUB_PLACEID, player)
-        return
-    end
+    TeleportService:Teleport(HIVEHUB_PLACEID, player)
+    return
 end
 
 -- =======================
@@ -45,14 +28,12 @@ local function getChar() return player.Character or player.CharacterAdded:Wait()
 local function getHRP() return getChar():WaitForChild("HumanoidRootPart") end
 local function getHumanoid() return getChar():WaitForChild("Humanoid") end
 
--- Backpack %
 local function backpackPercent()
     local stats = player:FindFirstChild("CoreStats")
     if not stats then return 0 end
     return (stats.Pollen.Value / stats.Capacity.Value) * 100
 end
 
--- Convert at hive
 local function convertHive()
     local hrp = getHRP()
     if player:FindFirstChild("SpawnPos") then
@@ -63,7 +44,6 @@ local function convertHive()
     end
 end
 
--- Auto claim Hive Hub
 local function claimHive()
     if player:FindFirstChild("SpawnPos") == nil then
         local claimRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ClaimHub")
@@ -72,7 +52,6 @@ local function claimHive()
     end
 end
 
--- Pathfinder walk
 local function walkTo(pos)
     local hrp = getHRP()
     local humanoid = getHumanoid()
@@ -82,7 +61,6 @@ local function walkTo(pos)
     path.TraverserFinished:Wait()
 end
 
--- Get nearest token / pollen part
 local function getNearestPickup(radius)
     local hrp = getHRP()
     local nearest
@@ -110,12 +88,10 @@ local Window = Rayfield:CreateWindow({
     ConfigurationSaving = {Enabled = true, FolderName = "Jozex", FileName = "HiveHubSettings"}
 })
 
--- Auto Farm Tab
 local Tab = Window:CreateTab("🌼 Auto Farm", 4483362458)
 Tab:CreateToggle({Name="Enable Auto Farm", CurrentValue=false, Callback=function(v) getgenv().AutoFarm=v end})
 Tab:CreateSlider({Name="Convert At (%)", Range={60,100}, Increment=5, CurrentValue=95, Callback=function(v) getgenv().ConvertPercent=v end})
 
--- Info Tab
 local InfoTab = Window:CreateTab("ℹ️ Info", 4483362458)
 InfoTab:CreateLabel({
     Name = "Bee Requirement",
