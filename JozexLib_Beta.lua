@@ -1,6 +1,4 @@
--- Jozex Hive Hub Auto Farm v1.0 - Custom UI
--- Bee Swarm Simulator
--- No Rayfield, fully self-contained
+-- Jozex Hive Hub Auto Farm v1.1 - Guaranteed Load
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +11,10 @@ local player = Players.LocalPlayer
 getgenv().AutoFarm = false
 getgenv().ConvertAt = 95
 local HIVEHUB_PLACEID = 15579077077
+
+-- WAIT FOR CHARACTER & HUB FIELD
+repeat task.wait() until player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+repeat task.wait() until workspace:FindFirstChild("Hub Field")
 
 -- ANTI-AFK
 player.Idled:Connect(function()
@@ -73,92 +75,37 @@ end
 -- =====================
 -- CUSTOM UI
 -- =====================
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JozexUI"
-ScreenGui.Parent = player:WaitForChild("PlayerGui")
+local gui = Instance.new("ScreenGui")
+gui.Name = "JozexUI"
+gui.Parent = player:WaitForChild("PlayerGui")
 
-local Frame = Instance.new("Frame")
-Frame.Size = UDim2.new(0,250,0,180)
-Frame.Position = UDim2.new(0,20,0,50)
-Frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
-Frame.BorderSizePixel = 0
-Frame.Parent = ScreenGui
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0,260,0,180)
+frame.Position = UDim2.new(0,20,0,50)
+frame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+frame.BorderSizePixel = 0
+frame.Parent = gui
 
 local function createLabel(text, y)
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, -10, 0, 20)
-    lbl.Position = UDim2.new(0,5,0, y)
+    lbl.Size = UDim2.new(1,-10,0,20)
+    lbl.Position = UDim2.new(0,5,0,y)
     lbl.BackgroundTransparency = 1
     lbl.TextColor3 = Color3.fromRGB(255,255,255)
     lbl.Text = text
     lbl.Font = Enum.Font.SourceSansBold
     lbl.TextSize = 16
-    lbl.Parent = Frame
+    lbl.Parent = frame
     return lbl
 end
 
-createLabel("Jozex Hive Hub Auto Farm", 5)
-createLabel("Requires 20+ bees", 25)
+createLabel("Jozex Hive Hub Auto Farm",5)
+createLabel("Requires 20+ bees",25)
 
--- Toggle Auto Farm Button
-local AutoBtn = Instance.new("TextButton")
-AutoBtn.Size = UDim2.new(1, -10, 0, 30)
-AutoBtn.Position = UDim2.new(0,5,0,55)
-AutoBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-AutoBtn.TextColor3 = Color3.fromRGB(255,255,255)
-AutoBtn.Text = "Auto Farm: OFF"
-AutoBtn.Font = Enum.Font.SourceSansBold
-AutoBtn.TextSize = 16
-AutoBtn.Parent = Frame
-AutoBtn.MouseButton1Click:Connect(function()
-    getgenv().AutoFarm = not getgenv().AutoFarm
-    AutoBtn.Text = "Auto Farm: "..(getgenv().AutoFarm and "ON" or "OFF")
-end)
-
--- Convert % Slider
-local Slider = Instance.new("TextBox")
-Slider.Size = UDim2.new(1, -10, 0, 30)
-Slider.Position = UDim2.new(0,5,0,95)
-Slider.BackgroundColor3 = Color3.fromRGB(50,50,50)
-Slider.TextColor3 = Color3.fromRGB(255,255,255)
-Slider.Text = "Convert At %: "..getgenv().ConvertAt
-Slider.Font = Enum.Font.SourceSansBold
-Slider.TextSize = 16
-Slider.ClearTextOnFocus = false
-Slider.Parent = Frame
-Slider.FocusLost:Connect(function(enter)
-    local val = tonumber(Slider.Text:match("%d+"))
-    if val then
-        getgenv().ConvertAt = math.clamp(val, 60,100)
-        Slider.Text = "Convert At %: "..getgenv().ConvertAt
-    else
-        Slider.Text = "Convert At %: "..getgenv().ConvertAt
-    end
-end)
-
--- =====================
--- AUTO FARM LOOP
--- =====================
-task.spawn(function()
-    while task.wait(0.3) do
-        claimHive()
-        if getgenv().AutoFarm then
-            local field = workspace:FindFirstChild("Hub Field")
-            if field then
-                walkTo(field.Position + Vector3.new(math.random(-6,6),0,math.random(-6,6)))
-            end
-            local t = nearestToken(12)
-            if t then walkTo(t.Position + Vector3.new(0,2,0)) end
-        end
-    end
-end)
-
--- AUTO CONVERT LOOP
-task.spawn(function()
-    while task.wait(1) do
-        if getgenv().AutoFarm and pollenPct() >= getgenv().ConvertAt then
-            convert()
-            task.wait(6)
-        end
-    end
-end)
+-- Toggle Auto Farm
+local autoBtn = Instance.new("TextButton")
+autoBtn.Size = UDim2.new(1,-10,0,30)
+autoBtn.Position = UDim2.new(0,5,0,55)
+autoBtn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+autoBtn.TextColor3 = Color3.fromRGB(255,255,255)
+autoBtn.Text = "Auto Farm:
